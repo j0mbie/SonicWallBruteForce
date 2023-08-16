@@ -212,7 +212,7 @@ def main():
     # if we're using a password list, we need to read that fun stuff in
     global passwords
     if passwordlist is not None:
-        passwordfile = open(passwordlist)
+        passwordfile = open(passwordlist, 'r', errors='ignore')
         try:
             passwords = passwordfile.readlines()
         finally:
