@@ -1,40 +1,26 @@
-# sonicWallBruteForce
-Script to brute force logins and password spray to SonicWall
+# SonicWallBruteForce
 
-Based on gist by vasuman to do autologins
+Script to brute force credentials against a SonicWall HTTPS management page.
+
+Forked from Hoodoer's work:  
+https://github.com/hoodoer/sonicWallBruteForce
+
+Based on gist by Vasuman to do autologins:  
 https://gist.github.com/vasuman/fa750a6fe57fc8a73aff
 
 
-I don't have a sonic wall, or valid creds, so not fully tested. Please let me know if this isn't working as expected.
-The search strings to detect a successful login are based on seeing other people's code, not access to
-a sonicwall and valid creds. 
-
-If it turns out this really does work, I'll focus on performance later. 
-
 SonicWall can be pretty IP blocking happy. Consider using the HTTP proxy feature to pass
-this through Burp, and use IPRotate extension to snag a new source IP for every request.
-See:
+this through Burp, and use IPRotate extension to snag a new source IP for every request. See:  
 https://portswigger.net/bappstore/2eb2b1cb1cf34cc79cda36f0f9019874
 
 
-Wet paint for sure. 
-
-@hoodoer
-
-
-
 Options:
-
--host          "host to target, e.g 'https://somesonicwall.xyz' (REQUIRED)"
-
--userlist      "user list (REQUIRED)"
-
--password      "password to use (single)."
-
--passwordlist  "password list. Seriously consider setting a delay value."
-
--proxy         "HTTP proxy."
-
--delay         "how many seconds to wait before moving to next password in list."
-
--debug         "print extra stuffs."
+```
+-host          URL of the target. Example: https://somesonicwall.xyz (Required.)
+-userlist      User list, in a text file. One entry per line.
+-password      Single password to try. Useful for testing the script.
+-passwordlist  Password list, in a text file. One entry per line.
+-proxy         HTTP proxy.
+-delay         How many seconds to wait before moving to the next password in the list.
+-debug         Print a lot of extra stuff.
+```
