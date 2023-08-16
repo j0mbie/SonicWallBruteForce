@@ -224,16 +224,30 @@ def main():
 
     # Loppity loop loop time. 
     global user
-    for password in passwords:
-        for user in users:
+    global PasswordCount
+    global iCounter
+
+    PasswordCount = len(passwords)
+    print("Password Count: " + str(PasswordCount))
+    
+    
+    for user in users:
+
+        iCounter = 0
+        
+        for password in passwords:
             user     = user.strip('\n')
             password = password.strip('\n')
+
+            iCounter = iCounter + 1
+            print("Current Count: " + str(iCounter) + "/" + str(PasswordCount))
 
             if debug:
                 print("Trying (" + user + ":" + password + ")")
 
             if do_login():
-                print("Winner winner chicken dinner (" + user + ":" + password + ")")
+                print("Success! " + user + ":" + password)
+                break
             else:
                 if debug:
                     print("Invalid credentials")
@@ -243,6 +257,8 @@ def main():
         if delay is not None:
             print("Password loop done, waiting " + str(delay) + " seconds...")
             time.sleep(int(delay))
+
+        
 
     print("Done.")
 
