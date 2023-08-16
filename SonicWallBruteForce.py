@@ -23,7 +23,7 @@
 # 
 # "Requests" Python package
 # In Windows, from your Python directory, run:
-# `Scripts\pip.exe install requests
+# Scripts\pip.exe install requests
 # 
 #  
 # Options:
